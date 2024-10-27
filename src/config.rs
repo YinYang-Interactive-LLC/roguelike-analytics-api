@@ -2,7 +2,7 @@ use std::env;
 
 #[derive(Clone)]
 pub struct Config {
-    pub secret_key: String,
+    pub secret_key: Option<String>,
     pub max_events_per_second: u64,
     pub host: String,
     pub port: u16,
@@ -17,7 +17,7 @@ pub struct Config {
 impl Config {
     pub fn from_env() -> Config {
         Config {
-            secret_key: env::var("SECRET_KEY").unwrap_or_else(|_| "your_shared_secret".to_string()),
+            secret_key: env::var("SECRET_KEY").ok(),
             max_events_per_second: env::var("MAX_EVENTS_PER_SECOND")
                 .unwrap_or_else(|_| "5".to_string())
                 .parse()

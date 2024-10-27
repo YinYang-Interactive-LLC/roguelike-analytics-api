@@ -1,4 +1,4 @@
-use actix_web::{web, Error, HttpRequest, HttpResponse, Responder};
+use actix_web::{web, Error, HttpRequest, HttpResponse, Responder, http::header::HeaderValue};
 use serde::{Deserialize, Serialize};
 use rusqlite::params;
 use serde_json::Value;
@@ -6,6 +6,7 @@ use uuid::Uuid;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::db_pool;
+use crate::config::{Config};
 use crate::app_state::{AppState};
 use crate::rate_limit::{check_rate_limit};
 
@@ -113,6 +114,13 @@ pub async fn ingest_event(
     })
 }
 
+pub fn compare_secrets(secret_header: Option<&HeaderValue>, config: &Config) -> bool {
+    if secret_header.is_none() || config.secret_key.is_none() {
+        return false;
+    }
+    secret_header.unwrap().to_str().unwrap() != config.secret_key.as_ref().unwrap()
+}
+
 pub async fn get_events(
     req: HttpRequest,
     data: web::Data<AppState>,
@@ -120,7 +128,7 @@ pub async fn get_events(
 ) -> Result<HttpResponse, Error> {
     // Check for shared secret
     let secret = req.headers().get("X-RLA-KEY");
-    if secret.is_none() || secret.unwrap().to_str().unwrap() != data.config.secret_key {
+    if compare_secrets(secret, &data.config) {
         return Ok(HttpResponse::Unauthorized().json(ApiResponse {
             success: false,
             message: "Insufficient permissions".to_string()
@@ -157,7 +165,7 @@ pub async fn get_events(
 pub async fn get_sessions(req: HttpRequest, data: web::Data<AppState>) -> Result<HttpResponse, Error> {
     // Check for shared secret
     let secret = req.headers().get("X-RLA-KEY");
-    if secret.is_none() || secret.unwrap().to_str().unwrap() != data.config.secret_key {
+    if compare_secrets(secret, &data.config) {
         return Ok(HttpResponse::Unauthorized().json(ApiResponse {
             success: false,
             message: "Insufficient permissions".to_string()
