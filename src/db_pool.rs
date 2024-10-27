@@ -1,12 +1,14 @@
 use rusqlite::{Connection};
 use std::sync::Once;
+use std::env;
 
 static INIT: Once = Once::new();
 static DB_PATH: &str = "analytics.db";
 
 fn initialize_database() {
     INIT.call_once(|| {
-        let conn = Connection::open(DB_PATH).expect("Failed to open database");
+        let path = env::var("DB_PATH").unwrap_or_else(|_| DB_PATH.to_string());
+        let conn = Connection::open(path).expect("Failed to open database");
 
         // Create tables if they do not exist
         conn.execute_batch(
@@ -35,7 +37,8 @@ fn initialize_database() {
 thread_local! {
     static DB_CONNECTION: Connection = {
         initialize_database();
-        let conn = Connection::open(DB_PATH).expect("Failed to open database");
+        let path = env::var("DB_PATH").unwrap_or_else(|_| DB_PATH.to_string());
+        let conn = Connection::open(path).expect("Failed to open database");
 
         // Enable WAL mode and other PRAGMAs
         conn.execute_batch(
