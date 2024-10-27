@@ -119,7 +119,7 @@ pub async fn get_events(
     path: web::Path<String>,
 ) -> Result<HttpResponse, Error> {
     // Check for shared secret
-    let secret = req.headers().get("X-Secret-Key");
+    let secret = req.headers().get("X-RLA-KEY");
     if secret.is_none() || secret.unwrap().to_str().unwrap() != data.config.secret_key {
         return Ok(HttpResponse::Unauthorized().json(ApiResponse {
             success: false,
@@ -156,7 +156,7 @@ pub async fn get_events(
 
 pub async fn get_sessions(req: HttpRequest, data: web::Data<AppState>) -> Result<HttpResponse, Error> {
     // Check for shared secret
-    let secret = req.headers().get("X-Secret-Key");
+    let secret = req.headers().get("X-RLA-KEY");
     if secret.is_none() || secret.unwrap().to_str().unwrap() != data.config.secret_key {
         return Ok(HttpResponse::Unauthorized().json(ApiResponse {
             success: false,
