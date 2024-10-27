@@ -1,5 +1,7 @@
-use actix_web::{middleware, web, App, HttpServer};
 use std::time::{Duration};
+
+use dotenv::dotenv;
+use actix_web::{middleware, web, App, HttpServer};
 
 use crate::app_state::{AppState};
 use crate::config::{Config};
@@ -13,6 +15,8 @@ use crate::route_handlers::{
 
 #[actix_web::main]
 pub async fn main() -> std::io::Result<()> {
+    dotenv().ok();
+
     // Initialize logger
     env_logger::init();
 
