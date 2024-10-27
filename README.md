@@ -85,6 +85,13 @@ The server can be configured via environment variables:
 *   **Retrieve Events for a Session**
     
     Send a `GET` request to `/get_events/{session_id}` with the shared secret provided in the `Authorization` header.
+
+```bash
+# Replace {session_id} with the actual session ID whose events you want to retrieve. 
+# Note that YOUR_SECRET_KEY will be the key that you set using the environment variable SECRET_KEY.
+curl -X GET http://localhost:8080/get_events/{session_id} \
+     -H "X-RLA-KEY: YOUR_SECRET_KEY"
+```
     
 
 ## Dependencies
