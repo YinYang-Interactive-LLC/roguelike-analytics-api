@@ -1,3 +1,5 @@
+![Roguelike Game Analytics Server](__assets/roguelike-analytics-api.png)
+
 ## Roguelike Game Analytics Server
 
 An HTTP server designed for ingesting and retrieving events from roguelike games, optimized for high-speed data ingestion into an SQLite database while ensuring compliance with data privacy laws.
