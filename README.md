@@ -1,4 +1,4 @@
-![Roguelike Game Analytics Server](__assets/roguelike-analytics-api.png)
+![Roguelike Game Analytics Server](__assets/roguelike-analytics-api.jpg)
 
 ## Roguelike Game Analytics Server
 
