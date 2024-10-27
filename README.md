@@ -25,7 +25,7 @@ An HTTP server designed for ingesting and retrieving events from roguelike games
 
 The server can be configured via environment variables:
 
-`SECRET_KEY:` Shared secret key for authenticated endpoints (default: `"your_shared_secret"`)
+`SECRET_KEY:` Shared secret key for authenticated endpoints (no default value)
 
 `MAX_EVENTS_PER_SECOND:` Maximum number of events per second (default: `5`)
 
