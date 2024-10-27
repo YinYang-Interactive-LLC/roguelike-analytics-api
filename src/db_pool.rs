@@ -13,8 +13,7 @@ fn initialize_database() {
             "
             CREATE TABLE IF NOT EXISTS sessions (
                 session_row_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                session_id TEXT PRIMARY KEY,
-                player_seed TEXT NOT NULL,
+                session_id TEXT UNIQUE NOT NULL,
                 start_date INTEGER NOT NULL,
                 ip_address TEXT NOT NULL
             );

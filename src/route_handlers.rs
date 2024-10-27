@@ -19,8 +19,7 @@ pub struct IngestEventRequest {
 
 #[derive(Serialize)]
 struct CreateSessionResponse {
-    session_id: String,
-    player_seed: String,
+    session_id: String
 }
 
 #[derive(Serialize)]
@@ -49,7 +48,6 @@ pub async fn create_session(req: HttpRequest, data: web::Data<AppState>) -> impl
     }
 
     let session_id = Uuid::new_v4().to_string();
-    let player_seed = Uuid::new_v4().to_string();
     let start_date = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
@@ -57,15 +55,14 @@ pub async fn create_session(req: HttpRequest, data: web::Data<AppState>) -> impl
 
     db_pool::with_connection(|conn| {
         conn.execute(
-            "INSERT INTO sessions (session_id, player_seed, start_date, ip_address) VALUES (?1, ?2, ?3, ?4)",
-            params![session_id, player_seed, start_date, ip],
+            "INSERT INTO sessions (session_id, start_date, ip_address) VALUES (?1, ?2, ?3)",
+            params![session_id, start_date, ip],
         )
         .unwrap();
     });
 
     HttpResponse::Ok().json(CreateSessionResponse {
         session_id,
-        player_seed,
     })
 }
 
