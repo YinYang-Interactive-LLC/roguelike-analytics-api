@@ -36,6 +36,12 @@ struct SessionInfo {
     start_date: u64,
 }
 
+#[derive(Serialize)]
+pub struct ApiResponse {
+    success: bool,
+    message: String,
+}
+
 pub async fn create_session(req: HttpRequest, data: web::Data<AppState>) -> impl Responder {
     // Rate limiting per IP address
     let ip = req
@@ -44,7 +50,10 @@ pub async fn create_session(req: HttpRequest, data: web::Data<AppState>) -> impl
         .unwrap_or_else(|| "unknown".to_string());
 
     if !check_rate_limit(&data, &ip, data.config.create_session_cost) {
-        return HttpResponse::TooManyRequests().body("Rate limit exceeded");
+        return HttpResponse::TooManyRequests().json(ApiResponse {
+            success: false,
+            message: "Rate limit exceeded".to_string()
+        });
     }
 
     let session_id = Uuid::new_v4().to_string();
@@ -78,7 +87,10 @@ pub async fn ingest_event(
         .unwrap_or_else(|| "unknown".to_string());
 
     if !check_rate_limit(&data, &ip, data.config.ingest_event_cost) {
-        return HttpResponse::TooManyRequests().body("Rate limit exceeded");
+        return HttpResponse::TooManyRequests().json(ApiResponse {
+            success: false,
+            message: "Rate limit exceeded".to_string()
+        })        
     }
 
     db_pool::with_connection(|conn| {
@@ -95,7 +107,10 @@ pub async fn ingest_event(
         .unwrap();
     });
 
-    HttpResponse::Ok().body("Event ingested")
+    HttpResponse::Ok().json(ApiResponse {
+        success: true,
+        message: "Event ingested".to_string()
+    })
 }
 
 pub async fn get_events(
@@ -106,7 +121,10 @@ pub async fn get_events(
     // Check for shared secret
     let secret = req.headers().get("X-Secret-Key");
     if secret.is_none() || secret.unwrap().to_str().unwrap() != data.config.secret_key {
-        return Ok(HttpResponse::Unauthorized().body("Invalid secret key"));
+        return Ok(HttpResponse::Unauthorized().json(ApiResponse {
+            success: false,
+            message: "Insufficient permissions".to_string()
+        }))             
     }
 
     let session_id = path.into_inner();
@@ -140,7 +158,10 @@ pub async fn get_sessions(req: HttpRequest, data: web::Data<AppState>) -> Result
     // Check for shared secret
     let secret = req.headers().get("X-Secret-Key");
     if secret.is_none() || secret.unwrap().to_str().unwrap() != data.config.secret_key {
-        return Ok(HttpResponse::Unauthorized().body("Invalid secret key"));
+        return Ok(HttpResponse::Unauthorized().json(ApiResponse {
+            success: false,
+            message: "Insufficient permissions".to_string()
+        }));
     }
 
     let sessions = db_pool::with_connection(|conn| {
