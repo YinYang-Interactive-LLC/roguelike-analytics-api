@@ -10,6 +10,7 @@ An HTTP server designed for ingesting and retrieving events from roguelike games
 *   **Session Management**: Create new sessions and ingest custom events via HTTP endpoints.
 *   **Data Retrieval**: Access session IDs and event data using a shared API secret.
 *   **Rate Limiting**: Configurable rate limiter to control request flow and prevent abuse.
+*   **Configurable**: Configuration supported using environment variables and .env files.
 *   **IP Recording**: Logs the IP address for each session and event.
 *   **Data Privacy Compliance**: Suitable for self-hosted analytics with respect to data privacy regulations.
 *   **Future UI Development**: Plans to develop a user interface for data examination.
