@@ -14,20 +14,22 @@ fn initialize_database() {
         conn.execute_batch(
             "
             CREATE TABLE IF NOT EXISTS sessions (
-                session_row_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                session_id TEXT UNIQUE NOT NULL,
-                start_date INTEGER NOT NULL,
+                session_id TEXT PRIMARY KEY NOT NULL,
+                start_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 ip_address TEXT NOT NULL
             );
             CREATE TABLE IF NOT EXISTS events (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                session_row_id TEXT NOT NULL,
+                session_id TEXT NOT NULL,
                 event_name TEXT NOT NULL,
-                time INTEGER NOT NULL,
+                timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 ip_address TEXT NOT NULL,
                 params TEXT,
-                FOREIGN KEY(session_row_id) REFERENCES sessions(session_row_id)
+                FOREIGN KEY(session_id) REFERENCES sessions(session_id)
             );
+
+            CREATE INDEX IF NOT EXISTS session_idx ON events (session_id);
+            CREATE INDEX IF NOT EXISTS session_event_name_idx ON events (session_id, event_name);
             ",
         )
         .expect("Failed to create tables");

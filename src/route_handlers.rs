@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use rusqlite::params;
 use serde_json::Value;
 use uuid::Uuid;
-use std::time::{SystemTime, UNIX_EPOCH};
+use chrono::{Utc};
 
 use crate::db_pool;
 use crate::config::{Config};
@@ -14,8 +14,7 @@ use crate::rate_limit::{check_rate_limit};
 pub struct IngestEventRequest {
     session_id: String,
     event_name: String,
-    time: u64,
-    params: Value,
+    data: Value,
 }
 
 #[derive(Serialize)]
@@ -27,20 +26,28 @@ struct CreateSessionResponse {
 struct Event {
     id: i64,
     event_name: String,
-    time: u64,
-    params: Value,
+    time: i64,
+    data: Value,
 }
 
 #[derive(Serialize)]
 struct SessionInfo {
     session_id: String,
-    start_date: u64,
+    start_date: i64,
 }
 
 #[derive(Serialize)]
 pub struct ApiResponse {
     success: bool,
     message: String,
+}
+
+pub fn now() -> i64 {
+    let now = Utc::now();
+
+    let millis_since_epoch = now.timestamp_millis();
+
+    millis_since_epoch
 }
 
 pub async fn create_session(req: HttpRequest, data: web::Data<AppState>) -> impl Responder {
@@ -58,15 +65,11 @@ pub async fn create_session(req: HttpRequest, data: web::Data<AppState>) -> impl
     }
 
     let session_id = Uuid::new_v4().to_string();
-    let start_date = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
 
     db_pool::with_connection(|conn| {
         conn.execute(
             "INSERT INTO sessions (session_id, start_date, ip_address) VALUES (?1, ?2, ?3)",
-            params![session_id, start_date, ip],
+            params![session_id, now(), ip],
         )
         .unwrap();
     });
@@ -96,13 +99,13 @@ pub async fn ingest_event(
 
     db_pool::with_connection(|conn| {
         conn.execute(
-            "INSERT INTO events (session_id, event_name, time, ip_address, params) VALUES (?1, ?2, ?3, ?4, json(?5))",
+            "INSERT INTO events (session_id, timestamp, event_name, ip_address, params) VALUES (?1, ?2, ?3, ?4, json(?5))",
             params![
                 payload.session_id,
+                now(),
                 payload.event_name,
-                payload.time,
                 ip,
-                payload.params.to_string()
+                payload.data.to_string()
             ],
         )
         .unwrap();
@@ -115,10 +118,11 @@ pub async fn ingest_event(
 }
 
 pub fn compare_secrets(secret_header: Option<&HeaderValue>, config: &Config) -> bool {
+    println!("S {:?} {:?}", secret_header, config.secret_key);
     if secret_header.is_none() || config.secret_key.is_none() {
         return false;
     }
-    secret_header.unwrap().to_str().unwrap() != config.secret_key.as_ref().unwrap()
+    secret_header.unwrap().to_str().unwrap() == config.secret_key.as_ref().unwrap()
 }
 
 pub async fn get_events(
@@ -128,7 +132,7 @@ pub async fn get_events(
 ) -> Result<HttpResponse, Error> {
     // Check for shared secret
     let secret = req.headers().get("X-RLA-KEY");
-    if compare_secrets(secret, &data.config) {
+    if !compare_secrets(secret, &data.config) {
         return Ok(HttpResponse::Unauthorized().json(ApiResponse {
             success: false,
             message: "Insufficient permissions".to_string()
@@ -140,7 +144,13 @@ pub async fn get_events(
     let events = db_pool::with_connection(|conn| {
         let mut stmt = conn
             .prepare_cached(
-                "SELECT id, event_name, time, params FROM events WHERE session_id = ?1 ORDER BY time ASC",
+                "SELECT
+                    id,
+                    event_name,
+                    timestamp,
+                    params
+                FROM events
+                WHERE session_id = ?1",
             )
             .unwrap();
 
@@ -151,7 +161,7 @@ pub async fn get_events(
                     id: row.get(0)?,
                     event_name: row.get(1)?,
                     time: row.get(2)?,
-                    params: serde_json::from_str(&params_str).unwrap_or(Value::Null),
+                    data: serde_json::from_str(&params_str).unwrap_or(Value::Null),
                 })
             })
             .unwrap();
@@ -165,7 +175,7 @@ pub async fn get_events(
 pub async fn get_sessions(req: HttpRequest, data: web::Data<AppState>) -> Result<HttpResponse, Error> {
     // Check for shared secret
     let secret = req.headers().get("X-RLA-KEY");
-    if compare_secrets(secret, &data.config) {
+    if !compare_secrets(secret, &data.config) {
         return Ok(HttpResponse::Unauthorized().json(ApiResponse {
             success: false,
             message: "Insufficient permissions".to_string()
