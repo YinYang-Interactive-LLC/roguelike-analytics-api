@@ -48,6 +48,8 @@ The server can be configured via environment variables:
 
 `TOKEN_BUCKET_SIZE:` Size of the token bucket for rate limiting (default: `10`)
 
+`MAX_JSON_PAYLOAD:` Maximum allowed JSON payload size (default `4096` [bytes])
+
 ## Installation
 
 1.  **Clone the Repository**
