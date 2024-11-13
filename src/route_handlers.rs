@@ -14,7 +14,15 @@ use crate::rate_limit::{check_rate_limit};
 pub struct IngestEventRequest {
     session_id: String,
     event_name: String,
-    data: Value,
+    data: Value
+}
+
+#[derive(Deserialize)]
+pub struct CreateSessionRequest {
+    device_model: Option<String>,
+    operating_system: Option<String>,
+    screen_width: Option<u64>,
+    screen_height: Option<u64>
 }
 
 #[derive(Serialize)]
@@ -50,7 +58,7 @@ pub fn now() -> i64 {
     millis_since_epoch
 }
 
-pub async fn create_session(req: HttpRequest, data: web::Data<AppState>) -> impl Responder {
+pub async fn create_session(req: HttpRequest, data: web::Data<AppState>, payload: web::Json<CreateSessionRequest>) -> impl Responder {
     // Rate limiting per IP address
     let ip = req
         .peer_addr()
@@ -69,7 +77,7 @@ pub async fn create_session(req: HttpRequest, data: web::Data<AppState>) -> impl
     db_pool::with_connection(|conn| {
         conn.execute(
             "INSERT INTO sessions (session_id, start_date, ip_address, device_model, operating_system, screen_width, screen_height) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![session_id, now(), ip, ],
+            params![session_id, now(), ip, payload.device_model, payload.operating_system, payload.screen_width, payload.screen_height],
         )
         .unwrap();
     });
