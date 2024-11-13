@@ -1,7 +1,7 @@
 use std::time::{Duration};
 
 use dotenv::dotenv;
-use actix_web::{middleware, web, App, HttpServer};
+use actix_web::{middleware, web, App, HttpServer, error, HttpResponse};
 
 use crate::app_state::{AppState};
 use crate::config::{Config};
@@ -43,10 +43,22 @@ pub async fn main() -> std::io::Result<()> {
     // Create a clone for the binding
     let config_task = data.config.clone();
 
+    let max_json_payload = config_task.max_json_payload;
+
     // Start server
     HttpServer::new(move || {
+        let json_config = web::JsonConfig::default()
+            .limit(max_json_payload)
+            .error_handler(|err, _req| {
+                error::InternalError::from_response(
+                    err,
+                    HttpResponse::Conflict().finish(),  // Respond with 409 Conflict on error
+                ).into()
+            });
+
         App::new()
             .wrap(middleware::Logger::default())
+            .app_data(json_config)
             .app_data(data.clone())
             .service(
                 web::resource("/create_session").route(web::post().to(create_session)),

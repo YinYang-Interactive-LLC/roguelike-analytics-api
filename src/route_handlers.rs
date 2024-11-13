@@ -68,8 +68,8 @@ pub async fn create_session(req: HttpRequest, data: web::Data<AppState>) -> impl
 
     db_pool::with_connection(|conn| {
         conn.execute(
-            "INSERT INTO sessions (session_id, start_date, ip_address) VALUES (?1, ?2, ?3)",
-            params![session_id, now(), ip],
+            "INSERT INTO sessions (session_id, start_date, ip_address, device_model, operating_system, screen_width, screen_height) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![session_id, now(), ip, ],
         )
         .unwrap();
     });

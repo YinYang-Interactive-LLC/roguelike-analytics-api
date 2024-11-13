@@ -16,7 +16,11 @@ fn initialize_database() {
             CREATE TABLE IF NOT EXISTS sessions (
                 session_id TEXT PRIMARY KEY NOT NULL,
                 start_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                ip_address TEXT NOT NULL
+                ip_address TEXT NOT NULL,
+                device_model TEXT,
+                operating_system TEXT,
+                screen_width INT,
+                screen_height INT
             );
             CREATE TABLE IF NOT EXISTS events (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
