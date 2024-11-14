@@ -10,11 +10,11 @@ use crate::config::{Config};
 use crate::app_state::{AppState};
 use crate::rate_limit::{check_rate_limit};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct IngestEventRequest {
     session_id: String,
     event_name: String,
-    data: Value
+    data: Option<Value>
 }
 
 #[derive(Deserialize)]
@@ -35,7 +35,7 @@ struct Event {
     id: i64,
     event_name: String,
     time: i64,
-    data: Value,
+    data: Option<Value>,
 }
 
 #[derive(Serialize)]
@@ -105,7 +105,7 @@ pub async fn ingest_event(
         })        
     }
 
-    db_pool::with_connection(|conn| {
+    let execution = db_pool::with_connection(|conn| {
         conn.execute(
             "INSERT INTO events (session_id, timestamp, event_name, ip_address, params) VALUES (?1, ?2, ?3, ?4, json(?5))",
             params![
@@ -113,20 +113,25 @@ pub async fn ingest_event(
                 now(),
                 payload.event_name,
                 ip,
-                payload.data.to_string()
+                payload.data.as_ref().map(|x| x.to_string())
             ],
         )
-        .unwrap();
     });
 
-    HttpResponse::Ok().json(ApiResponse {
-        success: true,
-        message: "Event ingested".to_string()
-    })
+    match execution {
+        Ok(_) => HttpResponse::Ok().json(ApiResponse {
+            success: true,
+            message: "Event ingested".to_string()
+        }),
+
+        Err(e) => HttpResponse::InternalServerError().json(ApiResponse {
+            success: false,
+            message: format!("Event not ingested: {}", e)
+        })
+    }
 }
 
 pub fn compare_secrets(secret_header: Option<&HeaderValue>, config: &Config) -> bool {
-    println!("S {:?} {:?}", secret_header, config.secret_key);
     if secret_header.is_none() || config.secret_key.is_none() {
         return false;
     }
@@ -169,7 +174,7 @@ pub async fn get_events(
                     id: row.get(0)?,
                     event_name: row.get(1)?,
                     time: row.get(2)?,
-                    data: serde_json::from_str(&params_str).unwrap_or(Value::Null),
+                    data: serde_json::from_str(&params_str).unwrap_or(None),
                 })
             })
             .unwrap();

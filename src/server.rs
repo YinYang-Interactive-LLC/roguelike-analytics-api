@@ -58,7 +58,6 @@ pub async fn main() -> std::io::Result<()> {
         let json_config = web::JsonConfig::default()
             .limit(max_json_payload)
             .error_handler(|err, _req| {
-                println!("{:?}", err);
                 match err {
                     error::JsonPayloadError::OverflowKnownLength { limit, .. } |
                     error::JsonPayloadError::Overflow { limit } => {
