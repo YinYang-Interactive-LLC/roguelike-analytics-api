@@ -35,25 +35,25 @@ def test_create_session_without_body(BASE_URL, cursor):
 
         response_data = response.json()
         if 'session_id' not in response_data:
-            print('Test 1 Failed: session_id not in response')
+            print('⍜ Test 1 Failed: session_id not in response')
             return None
         else:
             session_id = response_data['session_id']
-            print(f'Test 1 Passed: session_id = {session_id}')
+            print(f'⦿ Test 1 Passed: session_id = {session_id}')
             # Check database
             cursor.execute("SELECT * FROM sessions WHERE session_id = ?", (session_id,))
             row = cursor.fetchone()
             if row is None:
-                print('Test 1 Failed: session_id not found in database')
+                print('⍜ Test 1 Failed: session_id not found in database')
             else:
                 ip_address = row['ip_address']
                 if ip_address != '127.0.0.1':
-                    print(f'Test 1 Failed: ip_address is {ip_address}, expected 127.0.0.1')
+                    print(f'⍜ Test 1 Failed: ip_address is {ip_address}, expected 127.0.0.1')
                 else:
-                    print('Test 1 Passed: session_id found in database with correct ip_address')
+                    print('⦿ Test 1 Passed: session_id found in database with correct ip_address')
             return session_id
     except Exception as e:
-        print(f'Test 1 Failed: {e}')
+        print(f'⍜ Test 1 Failed: {e}')
         return None
 
 def test_create_session_with_body(BASE_URL, cursor):
@@ -67,20 +67,20 @@ def test_create_session_with_body(BASE_URL, cursor):
         response = requests.post(f'{BASE_URL}/create_session', json=session_data)
         response_data = response.json()
         if 'session_id' not in response_data:
-            print('Test 2 Failed: session_id not in response')
+            print('⍜ Test 2 Failed: session_id not in response')
             return None
         else:
             session_id = response_data['session_id']
-            print(f'Test 2 Passed: session_id = {session_id}')
+            print(f'⦿ Test 2 Passed: session_id = {session_id}')
             # Check database
             cursor.execute("SELECT * FROM sessions WHERE session_id = ?", (session_id,))
             row = cursor.fetchone()
             if row is None:
-                print('Test 2 Failed: session_id not found in database')
+                print('⍜ Test 2 Failed: session_id not found in database')
             else:
                 ip_address = row['ip_address']
                 if ip_address != '127.0.0.1':
-                    print(f'Test 2 Failed: ip_address is {ip_address}, expected 127.0.0.1')
+                    print(f'⍜ Test 2 Failed: ip_address is {ip_address}, expected 127.0.0.1')
                 else:
                     # Check the other fields
                     device_model = row['device_model']
@@ -91,12 +91,12 @@ def test_create_session_with_body(BASE_URL, cursor):
                         operating_system == 'TestOS' and
                         screen_width == 1920 and
                         screen_height == 1080):
-                        print('Test 2 Passed: session data stored correctly in database')
+                        print('⦿ Test 2 Passed: session data stored correctly in database')
                     else:
-                        print('Test 2 Failed: session data not stored correctly in database')
+                        print('⍜ Test 2 Failed: session data not stored correctly in database')
             return session_id
     except Exception as e:
-        print(f'Test 2 Failed: {e}')
+        print(f'⍜ Test 2 Failed: {e}')
         return None
 
 def test_create_session_with_large_body(BASE_URL, MAX_JSON_PAYLOAD):
@@ -104,11 +104,11 @@ def test_create_session_with_large_body(BASE_URL, MAX_JSON_PAYLOAD):
     try:
         response = requests.post(f'{BASE_URL}/create_session', json={'data': large_data})
         if response.status_code == 413:  # Payload Too Large
-            print('Test 3 Passed: Request failed with status code 413 Payload Too Large')
+            print('⦿ Test 3 Passed: Request failed with status code 413 Payload Too Large')
         else:
-            print(f'Test 3 Failed: Expected status code 413, got {response.status_code}')
+            print(f'⍜ Test 3 Failed: Expected status code 413, got {response.status_code}')
     except Exception as e:
-        print(f'Test 3 Failed: {e}')
+        print(f'⍜ Test 3 Failed: {e}')
 
 def test_ingest_event_invalid_session_id(BASE_URL):
     invalid_session_id = 'invalid_session_id'
@@ -119,11 +119,11 @@ def test_ingest_event_invalid_session_id(BASE_URL):
     try:
         response = requests.post(f'{BASE_URL}/ingest_event', json=event_data)
         if response.status_code != 200:
-            print('Test 4 Passed: Request failed as expected')
+            print('⦿ Test 4 Passed: Request failed as expected')
         else:
-            print('Test 4 Failed: Request succeeded unexpectedly')
+            print('⍜ Test 4 Failed: Request succeeded unexpectedly')
     except Exception as e:
-        print(f'Test 4 Failed: {e}')
+        print(f'⍜ Test 4 Failed: {e}')
 
 def test_ingest_event_missing_event_name(BASE_URL, session_id):
     event_data = {
@@ -132,11 +132,11 @@ def test_ingest_event_missing_event_name(BASE_URL, session_id):
     try:
         response = requests.post(f'{BASE_URL}/ingest_event', json=event_data)
         if response.status_code != 200:
-            print('Test 5 Passed: Request failed as expected due to missing event_name')
+            print('⦿ Test 5 Passed: Request failed as expected due to missing event_name')
         else:
-            print('Test 5 Failed: Request succeeded unexpectedly')
+            print('⍜ Test 5 Failed: Request succeeded unexpectedly')
     except Exception as e:
-        print(f'Test 5 Failed: {e}')
+        print(f'⍜ Test 5 Failed: {e}')
 
 def test_ingest_event_with_event_name(BASE_URL, cursor, session_id):
     event_data = {
@@ -146,22 +146,22 @@ def test_ingest_event_with_event_name(BASE_URL, cursor, session_id):
     try:
         response = requests.post(f'{BASE_URL}/ingest_event', json=event_data)
         if response.status_code == 200:
-            print('Test 6 Passed: Event ingested successfully')
+            print('⦿ Test 6 Passed: Event ingested successfully')
             # Check the database
             cursor.execute("SELECT * FROM events WHERE session_id = ? AND event_name = ?", (session_id, 'test-event'))
             row = cursor.fetchone()
             if row is None:
-                print('Test 6 Failed: Event not found in database')
+                print('⍜ Test 6 Failed: Event not found in database')
             else:
                 ip_address = row['ip_address']
                 if ip_address != '127.0.0.1':
-                    print(f'Test 6 Failed: ip_address is {ip_address}, expected 127.0.0.1')
+                    print(f'⍜ Test 6 Failed: ip_address is {ip_address}, expected 127.0.0.1')
                 else:
-                    print('Test 6 Passed: Event stored correctly in database with correct ip_address')
+                    print('⦿ Test 6 Passed: Event stored correctly in database with correct ip_address')
         else:
-            print(f'Test 6 Failed: Request failed with status code {response.status_code}')
+            print(f'⍜ Test 6 Failed: Request failed with status code {response.status_code}')
     except Exception as e:
-        print(f'Test 6 Failed: {e}')
+        print(f'⍜ Test 6 Failed: {e}')
 
 def test_ingest_event_with_data(BASE_URL, cursor, session_id):
     event_data_content = {'key1': 'value1', 'key2': 'value2'}
@@ -173,23 +173,23 @@ def test_ingest_event_with_data(BASE_URL, cursor, session_id):
     try:
         response = requests.post(f'{BASE_URL}/ingest_event', json=event_data)
         if response.status_code == 200:
-            print('Test 7 Passed: Event with data ingested successfully')
+            print('⦿ Test 7 Passed: Event with data ingested successfully')
             # Check the database
             cursor.execute("SELECT * FROM events WHERE session_id = ? AND event_name = ?", (session_id, 'test-data-event'))
             row = cursor.fetchone()
             if row is None:
-                print('Test 7 Failed: Event not found in database')
+                print('⍜ Test 7 Failed: Event not found in database')
             else:
                 params = row['params']
                 params_dict = json.loads(params)
                 if params_dict == event_data_content:
-                    print('Test 7 Passed: Event data stored correctly in database')
+                    print('⦿ Test 7 Passed: Event data stored correctly in database')
                 else:
-                    print('Test 7 Failed: Event data not stored correctly in database')
+                    print('⍜ Test 7 Failed: Event data not stored correctly in database')
         else:
-            print(f'Test 7 Failed: Request failed with status code {response.status_code}')
+            print(f'⍜ Test 7 Failed: Request failed with status code {response.status_code}')
     except Exception as e:
-        print(f'Test 7 Failed: {e}')
+        print(f'⍜ Test 7 Failed: {e}')
 
 def main():
     server_process = None
@@ -200,6 +200,18 @@ def main():
             print("Killing server process...")
             server_process.terminate()
             server_process.wait()
+
+            print()
+            print(" === STDOUT ===")
+            for line in server_process.stdout:
+                print(line)
+            print()
+
+            print(" === STDERR ===")
+            for line in server_process.stderr:
+                print(line)
+            print()
+
             server_process = None
 
     # Define a signal handler function
@@ -233,10 +245,10 @@ def main():
     server_command = sys.argv[1]
     server_process = subprocess.Popen(
         [server_command],
-        env=env_vars, stdout=subprocess.PIPE,
+        env=env_vars,
+        stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        text=True,
-        start_new_session=True
+        text=True
     )
 
     try:
