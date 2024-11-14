@@ -74,17 +74,23 @@ pub async fn create_session(req: HttpRequest, data: web::Data<AppState>, payload
 
     let session_id = Uuid::new_v4().to_string();
 
-    db_pool::with_connection(|conn| {
+    let execution = db_pool::with_connection(|conn| {
         conn.execute(
             "INSERT INTO sessions (session_id, start_date, ip_address, device_model, operating_system, screen_width, screen_height) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
             params![session_id, now(), ip, payload.device_model, payload.operating_system, payload.screen_width, payload.screen_height],
         )
-        .unwrap();
     });
 
-    HttpResponse::Ok().json(CreateSessionResponse {
-        session_id,
-    })
+    match execution {
+        Ok(_) => HttpResponse::Ok().json(CreateSessionResponse {
+            session_id,
+        }),
+
+        Err(e) => HttpResponse::InternalServerError().json(ApiResponse {
+            success: false,
+            message: format!("Session not created: {}", e)
+        })
+    }
 }
 
 pub async fn ingest_event(
