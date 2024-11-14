@@ -211,3 +211,7 @@ pub async fn get_sessions(req: HttpRequest, data: web::Data<AppState>) -> Result
 
     Ok(HttpResponse::Ok().json(sessions))
 }
+
+pub async fn health_check() -> Result<HttpResponse, Error> {
+    Ok(HttpResponse::Ok().finish())
+}

@@ -2,6 +2,7 @@ use std::time::{Duration};
 
 use dotenv::dotenv;
 use actix_web::{middleware, web, App, HttpServer, error, HttpResponse};
+use serde::{Serialize};
 
 use crate::app_state::{AppState};
 use crate::config::{Config};
@@ -10,8 +11,14 @@ use crate::route_handlers::{
     create_session,
     ingest_event,
     get_events,
-    get_sessions
+    get_sessions,
+    health_check
 };
+
+#[derive(Serialize)]
+struct PublicJsonError {
+    pub message: String
+}
 
 #[actix_web::main]
 pub async fn main() -> std::io::Result<()> {
@@ -45,15 +52,30 @@ pub async fn main() -> std::io::Result<()> {
 
     let max_json_payload = config_task.max_json_payload;
 
+
     // Start server
-    HttpServer::new(move || {
+    let server = HttpServer::new(move || {
         let json_config = web::JsonConfig::default()
             .limit(max_json_payload)
             .error_handler(|err, _req| {
-                error::InternalError::from_response(
-                    err,
-                    HttpResponse::Conflict().finish(),  // Respond with 409 Conflict on error
-                ).into()
+                println!("{:?}", err);
+                match err {
+                    error::JsonPayloadError::OverflowKnownLength { limit, .. } |
+                    error::JsonPayloadError::Overflow { limit } => {
+                        // Handle payload too large error
+                        let response = HttpResponse::PayloadTooLarge().json(
+                            PublicJsonError { message: format!("Payload too large. Maximum size allowed is {} bytes", limit) }
+                        );
+                        error::InternalError::from_response(err, response).into()
+                    },
+                    _ => {
+                        // Handle other JSON parsing errors
+                        let response = HttpResponse::BadRequest().json(
+                            PublicJsonError { message: format!("Invalid JSON: {}", err) }
+                        );
+                        error::InternalError::from_response(err, response).into()
+                    }
+                }
             });
 
         App::new()
@@ -68,8 +90,12 @@ pub async fn main() -> std::io::Result<()> {
             )
             .service(web::resource("/get_events/{session_id}").route(web::get().to(get_events)))
             .service(web::resource("/get_sessions").route(web::get().to(get_sessions)))
-    })
-    .bind((config_task.host.as_str(), config_task.port))?
+            .service(web::resource("/health_check").route(web::get().to(health_check)))
+    });
+
+    println!("Listening on {:?}", (config_task.host.as_str(), config_task.port));
+    
+    server.bind((config_task.host.as_str(), config_task.port))?
     .run()
     .await
 }
