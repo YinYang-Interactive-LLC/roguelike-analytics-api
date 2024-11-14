@@ -92,8 +92,6 @@ pub async fn main() -> std::io::Result<()> {
             .service(web::resource("/health_check").route(web::get().to(health_check)))
     });
 
-    println!("Listening on {:?}", (config_task.host.as_str(), config_task.port));
-    
     server.bind((config_task.host.as_str(), config_task.port))?
     .run()
     .await
