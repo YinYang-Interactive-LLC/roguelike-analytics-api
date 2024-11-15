@@ -33,6 +33,7 @@ fn initialize_database() {
                 FOREIGN KEY(session_id) REFERENCES sessions(session_id)
             );
 
+            CREATE INDEX IF NOT EXISTS user_idx ON sessions (user_id);
             CREATE INDEX IF NOT EXISTS session_idx ON events (session_id);
             CREATE INDEX IF NOT EXISTS session_event_name_idx ON events (session_id, event_name);
             ",
