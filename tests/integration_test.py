@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import os
 import sys
 import time
@@ -39,7 +41,10 @@ def test_create_session_without_body(BASE_URL, cursor):
             return None
         else:
             session_id = response_data['session_id']
-            print(f'⦿ Test 1 Passed: session_id = {session_id}')
+            user_id = response_data['user_id']
+
+            print(f'⦿ Test 1 Passed: session_id = {session_id}, user_id = {user_id}')
+
             # Check database
             cursor.execute("SELECT * FROM sessions WHERE session_id = ?", (session_id,))
             row = cursor.fetchone()
@@ -51,10 +56,54 @@ def test_create_session_without_body(BASE_URL, cursor):
                     print(f'⍜ Test 1 Failed: ip_address is {ip_address}, expected 127.0.0.1')
                 else:
                     print('⦿ Test 1 Passed: session_id found in database with correct ip_address')
+
+                user_id_test = row['user_id']
+                if user_id_test != user_id:
+                    print(f'⍜ Test 1 Failed: user_id is {user_id_test}, expected 127.0.0.1')
+                else:
+                    print('⦿ Test 1 Passed: session_id found in database with correct user_id')                    
             return session_id
     except Exception as e:
         print(f'⍜ Test 1 Failed: {e}')
         return None
+
+def test_create_session_with_user_id(BASE_URL, cursor):
+    try:
+        response = requests.post(f'{BASE_URL}/create_session', json={ "user_id": 'xxx' })
+        assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
+
+        response_data = response.json()
+        if 'session_id' not in response_data:
+            print('⍜ Test 8 Failed: session_id not in response')
+            return None
+        else:
+            session_id = response_data['session_id']
+            user_id = response_data['user_id']
+            print(f'⦿ Test 8 Passed: session_id = {session_id}, user_id = {user_id}')
+            # Check database
+            cursor.execute("SELECT * FROM sessions WHERE session_id = ?", (session_id,))
+            row = cursor.fetchone()
+            if row is None:
+                print('⍜ Test 8 Failed: session_id not found in database')
+            else:
+                ip_address = row['ip_address']
+                if ip_address != '127.0.0.1':
+                    print(f'⍜ Test 8 Failed: ip_address is {ip_address}, expected 127.0.0.1')
+                else:
+                    print('⦿ Test 8 Passed: session_id found in database with correct ip_address')
+
+                user_id_test = row['user_id']
+                if user_id_test != 'xxx':
+                    print(f'⍜ Test 8 Failed: user_id is {user_id_test}, expected xxx')
+                else:
+                    print('⦿ Test 8 Passed: session_id found in database with correct user_id')
+
+                
+            return session_id
+    except Exception as e:
+        print(f'⍜ Test 8 Failed: {e}')
+        return None
+
 
 def test_create_session_with_body(BASE_URL, cursor):
     session_data = {
@@ -282,6 +331,7 @@ def main():
             test_ingest_event_with_data(BASE_URL, cursor, session_id_2)
         else:
             print("Skipping some tests due to failure in session creation.")
+        session_id_1b = test_create_session_with_user_id(BASE_URL, cursor)
 
     finally:
         # Clean up

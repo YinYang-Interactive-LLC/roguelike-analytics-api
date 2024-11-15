@@ -19,6 +19,7 @@ pub struct IngestEventRequest {
 
 #[derive(Deserialize)]
 pub struct CreateSessionRequest {
+    user_id: Option<String>,
     device_model: Option<String>,
     operating_system: Option<String>,
     screen_width: Option<u64>,
@@ -27,7 +28,8 @@ pub struct CreateSessionRequest {
 
 #[derive(Serialize)]
 struct CreateSessionResponse {
-    session_id: String
+    session_id: String,
+    user_id: String,
 }
 
 #[derive(Serialize)]
@@ -73,17 +75,21 @@ pub async fn create_session(req: HttpRequest, data: web::Data<AppState>, payload
     }
 
     let session_id = Uuid::new_v4().to_string();
+    
+    let user_id = payload.user_id.clone()
+        .unwrap_or_else(|| Uuid::new_v4().to_string());
 
     let execution = db_pool::with_connection(|conn| {
         conn.execute(
-            "INSERT INTO sessions (session_id, start_date, ip_address, device_model, operating_system, screen_width, screen_height) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![session_id, now(), ip, payload.device_model, payload.operating_system, payload.screen_width, payload.screen_height],
+            "INSERT INTO sessions (session_id, user_id, start_date, ip_address, device_model, operating_system, screen_width, screen_height) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![session_id, user_id, now(), ip, payload.device_model, payload.operating_system, payload.screen_width, payload.screen_height],
         )
     });
 
     match execution {
         Ok(_) => HttpResponse::Ok().json(CreateSessionResponse {
             session_id,
+            user_id,
         }),
 
         Err(e) => HttpResponse::InternalServerError().json(ApiResponse {

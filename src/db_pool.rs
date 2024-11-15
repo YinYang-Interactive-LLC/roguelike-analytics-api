@@ -15,6 +15,7 @@ fn initialize_database() {
             "
             CREATE TABLE IF NOT EXISTS sessions (
                 session_id TEXT PRIMARY KEY NOT NULL,
+                user_id TEXT,
                 start_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 ip_address TEXT NOT NULL,
                 device_model TEXT,
