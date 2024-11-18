@@ -21,7 +21,8 @@ fn initialize_database() {
                 device_model TEXT,
                 operating_system TEXT,
                 screen_width INT,
-                screen_height INT
+                screen_height INT,
+                user_agent TEXT
             );
             CREATE TABLE IF NOT EXISTS events (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,

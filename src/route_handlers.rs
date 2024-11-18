@@ -60,6 +60,10 @@ pub fn now() -> i64 {
     millis_since_epoch
 }
 
+fn get_user_agent<'a>(req: &'a HttpRequest) -> Option<&'a str> {
+    req.headers().get("user-agent")?.to_str().ok()
+}
+
 pub async fn create_session(req: HttpRequest, data: web::Data<AppState>, payload: web::Json<CreateSessionRequest>) -> impl Responder {
     // Rate limiting per IP address
     let ip = req
@@ -74,19 +78,23 @@ pub async fn create_session(req: HttpRequest, data: web::Data<AppState>, payload
         });
     }
 
+    let user_agent = get_user_agent(&req);
+
     let session_id = Uuid::new_v4().to_string();
-    
+
     let user_id = payload.user_id.clone()
         .unwrap_or_else(|| Uuid::new_v4().to_string());
 
     let execution = db_pool::with_connection(|conn| {
         conn.execute(
-            "INSERT INTO sessions (session_id, user_id, start_date, ip_address, device_model, operating_system, screen_width, screen_height) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-            params![session_id, user_id, now(), ip, payload.device_model, payload.operating_system, payload.screen_width, payload.screen_height],
+            "INSERT INTO sessions (session_id, user_id, start_date, ip_address, device_model, operating_system, screen_width, screen_height, user_agent) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            params![session_id, user_id, now(), ip, payload.device_model, payload.operating_system, payload.screen_width, payload.screen_height, user_agent],
         )
     });
 
+
     match execution {
+        // ToDo: notify REDIS channel that sessionId was created
         Ok(_) => HttpResponse::Ok().json(CreateSessionResponse {
             session_id,
             user_id,
@@ -130,8 +138,10 @@ pub async fn ingest_event(
         )
     });
 
+
     match execution {
         Ok(_) => HttpResponse::Ok().json(ApiResponse {
+            // ToDo: notify REDIS channel that sessionId was updated
             success: true,
             message: "Event ingested".to_string()
         }),

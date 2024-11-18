@@ -36,6 +36,7 @@ def test_create_session_without_body(BASE_URL, cursor):
         assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
 
         response_data = response.json()
+
         if 'session_id' not in response_data:
             print('⍜ Test 1 Failed: session_id not in response')
             return None
