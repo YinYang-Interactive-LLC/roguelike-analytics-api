@@ -50,6 +50,8 @@ The server can be configured via environment variables:
 
 `MAX_JSON_PAYLOAD:` Maximum allowed JSON payload size (default `4096` [bytes])
 
+`ALLOWED_ORIGINS:` List of allowed base URLs that are allowed to request this api endpoint (default: [])
+
 ## Installation
 
 1.  **Clone the Repository**
