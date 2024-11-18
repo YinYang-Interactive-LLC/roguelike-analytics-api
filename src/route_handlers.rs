@@ -60,16 +60,27 @@ pub fn now() -> i64 {
     millis_since_epoch
 }
 
+fn get_request_id(req: &HttpRequest, data: &web::Data<AppState>) -> Option<String> {
+    if data.config.trust_proxy != 0 {
+        req.headers().get("cf-connecting-ip")
+            .or_else(|| req.headers().get("x-forwarded-for"))
+            .and_then(|v| v.to_str().ok())
+            .and_then(|s| s.split(',').next())
+            .map(|addr| addr.to_string())
+
+    } else {
+        // Otherwise, use the peer address from the connection
+        req.peer_addr().map(|addr| addr.ip().to_string()).clone()
+    }
+}
+
 fn get_user_agent<'a>(req: &'a HttpRequest) -> Option<&'a str> {
     req.headers().get("user-agent")?.to_str().ok()
 }
 
 pub async fn create_session(req: HttpRequest, data: web::Data<AppState>, payload: web::Json<CreateSessionRequest>) -> impl Responder {
     // Rate limiting per IP address
-    let ip = req
-        .peer_addr()
-        .map(|addr| addr.ip().to_string())
-        .unwrap_or_else(|| "unknown".to_string());
+    let ip = get_request_id(&req, &data).unwrap_or("unknown".to_string());
 
     if !check_rate_limit(&data, &ip, data.config.create_session_cost) {
         return HttpResponse::TooManyRequests().json(ApiResponse {
@@ -113,10 +124,7 @@ pub async fn ingest_event(
     payload: web::Json<IngestEventRequest>,
 ) -> impl Responder {
     // Rate limiting per IP address
-    let ip = req
-        .peer_addr()
-        .map(|addr| addr.ip().to_string())
-        .unwrap_or_else(|| "unknown".to_string());
+    let ip = get_request_id(&req, &data).unwrap_or("unknown".to_string());
 
     if !check_rate_limit(&data, &ip, data.config.ingest_event_cost) {
         return HttpResponse::TooManyRequests().json(ApiResponse {

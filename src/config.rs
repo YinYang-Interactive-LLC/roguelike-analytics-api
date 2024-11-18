@@ -12,6 +12,7 @@ pub struct Config {
     pub create_session_cost: u64,
     pub ingest_event_cost: u64,
     pub token_bucket_size: u64,
+    pub trust_proxy: u64,
     pub max_json_payload: usize,
     pub cors_origins: Option<String>
 }
@@ -58,7 +59,11 @@ impl Config {
                 .unwrap_or_else(|_| "4096".to_string())
                 .parse()
                 .expect("Invalid value provided for MAX_JSON_PAYLOAD"),
-            cors_origins: env::var("ALLOWED_ORIGINS").ok()
+            cors_origins: env::var("ALLOWED_ORIGINS").ok(),
+            trust_proxy: env::var("TRUST_PROXY")
+                .unwrap_or_else(|_| "0".to_string())
+                .parse()
+                .expect("Trust proxy must either be zero or non-zero"),
         }      
     }
 }
