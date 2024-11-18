@@ -1,7 +1,10 @@
 use std::time::{Duration};
+use std::collections::HashSet;
 
 use dotenv::dotenv;
-use actix_web::{middleware, web, App, HttpServer, error, HttpResponse};
+use actix_web::{middleware, web, App, HttpServer, error, HttpResponse, http};
+use actix_cors::Cors;
+
 use serde::{Serialize};
 
 use crate::app_state::{AppState};
@@ -18,6 +21,38 @@ use crate::route_handlers::{
 #[derive(Serialize)]
 struct PublicJsonError {
     pub message: String
+}
+
+fn extract_allowed_origins(value: &Option<String>) -> HashSet<String> {
+    match value {
+        Some(val) => val.split(',')
+           .filter_map(|s| {
+               let trimmed = s.trim();
+               if !trimmed.is_empty() {
+                   Some(trimmed.to_string())
+               } else {
+                   None
+               }
+           })
+           .collect(),
+
+        None => HashSet::<String>::new()
+    }
+}
+
+fn cors_middleware(value: &Option<String>) -> Cors {
+    let allowed = extract_allowed_origins(value);
+
+    Cors::default()
+        .allowed_methods(vec!["GET", "POST", "OPTIONS"])
+        .allowed_headers(vec![http::header::CONTENT_TYPE])
+        .allowed_origin_fn(move |origin, _req_head| {
+            match origin.to_str() {
+                Ok(value) => (value.starts_with("http://") || value.starts_with("https://")) && allowed.contains(value),
+                Err(_) => false
+            }
+        })
+        .max_age(3600)
 }
 
 #[actix_web::main]
@@ -47,11 +82,12 @@ pub async fn main() -> std::io::Result<()> {
         }
     });
 
+
     // Create a clone for the binding
     let config_task = data.config.clone();
 
     let max_json_payload = config_task.max_json_payload;
-
+    let allowed_origins = config_task.cors_origins.clone();
 
     // Start server
     let server = HttpServer::new(move || {
@@ -79,6 +115,7 @@ pub async fn main() -> std::io::Result<()> {
 
         App::new()
             .wrap(middleware::Logger::default())
+            .wrap(cors_middleware(&allowed_origins))
             .app_data(json_config)
             .app_data(data.clone())
             .service(

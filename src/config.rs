@@ -12,7 +12,8 @@ pub struct Config {
     pub create_session_cost: u64,
     pub ingest_event_cost: u64,
     pub token_bucket_size: u64,
-    pub max_json_payload: usize
+    pub max_json_payload: usize,
+    pub cors_origins: Option<String>
 }
 
 impl Config {
@@ -56,7 +57,8 @@ impl Config {
             max_json_payload: env::var("MAX_JSON_PAYLOAD")
                 .unwrap_or_else(|_| "4096".to_string())
                 .parse()
-                .expect("Invalid value provided for MAX_JSON_PAYLOAD"),   
+                .expect("Invalid value provided for MAX_JSON_PAYLOAD"),
+            cors_origins: env::var("ALLOWED_ORIGINS").ok()
         }      
     }
 }
