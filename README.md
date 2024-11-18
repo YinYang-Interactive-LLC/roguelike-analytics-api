@@ -52,6 +52,8 @@ The server can be configured via environment variables:
 
 `ALLOWED_ORIGINS:` List of allowed base URLs that are allowed to request this api endpoint (default: [])
 
+`TRUST_PROXY:` extract IP from proxy headers if set to 1 (default: 0)
+
 ## Installation
 
 1.  **Clone the Repository**
