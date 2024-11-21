@@ -108,12 +108,16 @@ pub async fn create_session(req: HttpRequest, data: web::Data<AppState>, payload
         Ok(_) => {
             // Notify REDIS channel that sessionId was created
             if let Some(redis_pool) = data.redis_pool.as_ref() {
-                let mut connection = redis_pool.get().await.unwrap();
+                let redis_instance = redis_pool.get().await;
 
-                redis_cmd("PUBLISH")
-                    .arg(&["evt_session_created", &session_id])
-                    .query_async::<()>(&mut connection)
-                    .await.unwrap();
+                if let Ok(mut connection) = redis_instance {
+                    redis_cmd("PUBLISH")
+                        .arg(&["evt_session_created", &session_id])
+                        .query_async::<()>(&mut connection)
+                        .await.unwrap();   
+                } else {
+                    eprintln!("Cannot connect to redis: {}", redis_instance.err().unwrap());
+                }
             }
 
             HttpResponse::Ok().json(CreateSessionResponse {
@@ -164,12 +168,16 @@ pub async fn ingest_event(
         Ok(_) => {
             // Notify REDIS channel that sessionId was created
             if let Some(redis_pool) = data.redis_pool.as_ref() {
-                let mut connection = redis_pool.get().await.unwrap();
+                let redis_instance = redis_pool.get().await;
 
-                redis_cmd("PUBLISH")
-                    .arg(&["evt_session_update", &payload.session_id])
-                    .query_async::<()>(&mut connection)
-                    .await.unwrap();
+                if let Ok(mut connection) = redis_instance {
+                    redis_cmd("PUBLISH")
+                        .arg(&["evt_session_updated", &payload.session_id])
+                        .query_async::<()>(&mut connection)
+                        .await.unwrap();   
+                } else {
+                    eprintln!("Cannot connect to redis: {}", redis_instance.err().unwrap());
+                }
             }
 
             HttpResponse::Ok().json(ApiResponse {
