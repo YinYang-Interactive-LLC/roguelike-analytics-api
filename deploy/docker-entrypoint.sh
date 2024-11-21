@@ -7,4 +7,4 @@ if [ -z "$secret_key" ]; then
   echo "SECRET_KEY was not defined. For this session '${SECRET_KEY}' will be used as a key."
 fi
 
-roguelike-analytics-api
+roguelike-analytics-ingest-server

@@ -3,9 +3,9 @@
 FROM rust:1.82-bullseye AS builder
 
 # Create a new empty shell project
-WORKDIR /usr/src/roguelike-analytics-api
-RUN USER=root cargo new --bin roguelike-analytics-api
-WORKDIR /usr/src/roguelike-analytics-api
+WORKDIR /usr/src/roguelike-analytics-ingest-server
+RUN USER=root cargo new --bin roguelike-analytics-ingest-server
+WORKDIR /usr/src/roguelike-analytics-ingest-server
 
 # Copy the Cargo manifest files
 COPY ./Cargo.toml ./Cargo.lock ./
@@ -18,6 +18,7 @@ COPY ./src ./src
 
 # Create release build
 RUN cargo build --release
+
 
 
 # Second stage: Run
@@ -41,7 +42,7 @@ RUN groupadd $APP_USER \
     && useradd -g $APP_USER -m -s /bin/bash $APP_USER
 
 # Copy the binary from the build stage to the current stage
-COPY --from=builder /usr/src/roguelike-analytics-api/target/release/roguelike-analytics-api /usr/local/bin/roguelike-analytics-api
+COPY --from=builder /usr/src/roguelike-analytics-ingest-server/target/release/roguelike-analytics-ingest-server /usr/local/bin/roguelike-analytics-ingest-server
 
 # Copy docker-entrypoint
 COPY deploy/docker-entrypoint.sh /docker-entrypoint.sh
