@@ -14,7 +14,33 @@ pub struct Config {
     pub token_bucket_size: u64,
     pub trust_proxy: u64,
     pub max_json_payload: usize,
-    pub cors_origins: Option<String>
+    pub cors_origins: Option<String>,
+
+    pub redis_connection_hostname: Option<String>,
+    pub redis_connection_db: i64,
+    pub redis_connection_port: u16,
+    pub redis_connection_use_tls: bool,
+    pub redis_connection_username: Option<String>,
+    pub redis_connection_password: Option<String>,
+    pub redis_connection_protocol: Option<String>,
+}
+
+fn parse_bool(input: Option<String>, default_value: bool) -> bool {
+    match input.as_deref() {
+        Some("") => default_value,
+
+        Some("true") | Some("True") | Some("TRUE") => true,
+        Some("yes") | Some("y") => true,
+        Some("YES") | Some("Y") => true,
+        Some("1") => true,
+
+        Some("false") | Some("False") | Some("FALSE") => false,
+        Some("no") | Some("n") => false,
+        Some("NO") | Some("N") => false,
+        Some("0") => false,
+
+        _ => default_value
+    }
 }
 
 impl Config {
@@ -64,6 +90,20 @@ impl Config {
                 .unwrap_or_else(|_| "0".to_string())
                 .parse()
                 .expect("Trust proxy must either be zero or non-zero"),
+
+            redis_connection_hostname: env::var("REDIS_HOSTNAME").ok(),
+            redis_connection_username: env::var("REDIS_USERNAME").ok(),
+            redis_connection_password: env::var("REDIS_PASSWORD").ok(),
+            redis_connection_protocol: env::var("REDIS_PROTOCOL").ok(),
+            redis_connection_port: env::var("REDIS_PORT")
+                .unwrap_or_else(|_| "6379".to_string())
+                .parse()
+                .expect("Invalid number specified for REDIS_PORT"),            
+            redis_connection_db: env::var("REDIS_DATABASE")
+                .unwrap_or_else(|_| "0".to_string())
+                .parse()
+                .expect("Invalid number specified for REDIS_DATABASE"),
+            redis_connection_use_tls: parse_bool(env::var("REDIS_USE_TLS").ok(), false),            
         }      
     }
 }

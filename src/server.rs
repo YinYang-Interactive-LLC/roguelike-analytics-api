@@ -65,8 +65,14 @@ pub async fn main() -> std::io::Result<()> {
     // Read the config from env vars
     let config = Config::from_env();
 
+    // Create appState
+    let app_state = AppState::init(config);
+
+    // Test connection
+    app_state.test_connection().await?;
+
     // Create new app state
-    let data = web::Data::new(AppState::init(config));
+    let data = web::Data::new(app_state);
 
     // Spawn cleanup worker
     let rate_limiter_clone = data.rate_limiter.clone();
@@ -81,7 +87,6 @@ pub async fn main() -> std::io::Result<()> {
             cleanup_rate_limiter(&rate_limiter_clone, &config_clone);
         }
     });
-
 
     // Create a clone for the binding
     let config_task = data.config.clone();

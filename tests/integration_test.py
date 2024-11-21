@@ -280,7 +280,7 @@ def main():
     MAX_JSON_PAYLOAD = '1024'
     db_fd, DB_PATH = tempfile.mkstemp(suffix='.sqlite3')
 
-    env_vars = os.environ.copy()
+    env_vars = os.environ.copy() # contains the REDIS vars
     env_vars['HOST'] = HOST
     env_vars['PORT'] = PORT
     env_vars['SECRET_KEY'] = SECRET_KEY

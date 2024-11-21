@@ -1,5 +1,6 @@
 use actix_web::{web, Error, HttpRequest, HttpResponse, Responder, http::header::HeaderValue};
 use serde::{Deserialize, Serialize};
+use deadpool_redis::{redis::{cmd as redis_cmd}};
 use rusqlite::params;
 use serde_json::Value;
 use uuid::Uuid;
@@ -103,13 +104,23 @@ pub async fn create_session(req: HttpRequest, data: web::Data<AppState>, payload
         )
     });
 
-
     match execution {
-        // ToDo: notify REDIS channel that sessionId was created
-        Ok(_) => HttpResponse::Ok().json(CreateSessionResponse {
-            session_id,
-            user_id,
-        }),
+        Ok(_) => {
+            // Notify REDIS channel that sessionId was created
+            if let Some(redis_pool) = data.redis_pool.as_ref() {
+                let mut connection = redis_pool.get().await.unwrap();
+
+                redis_cmd("PUBLISH")
+                    .arg(&["evt_session_created", &session_id])
+                    .query_async::<()>(&mut connection)
+                    .await.unwrap();
+            }
+
+            HttpResponse::Ok().json(CreateSessionResponse {
+                session_id,
+                user_id,
+            })
+        },
 
         Err(e) => HttpResponse::InternalServerError().json(ApiResponse {
             success: false,
@@ -133,6 +144,9 @@ pub async fn ingest_event(
         })        
     }
 
+    // ToDo: use mpsc::channel and thread to collect events first (BULK_MODE, BULK_INTERVAL=100ms)
+    // or allow to use default (instant write).
+    // *** tokio::sync::mpsc ***
     let execution = db_pool::with_connection(|conn| {
         conn.execute(
             "INSERT INTO events (session_id, timestamp, event_name, ip_address, params) VALUES (?1, ?2, ?3, ?4, json(?5))",
@@ -146,13 +160,25 @@ pub async fn ingest_event(
         )
     });
 
-
     match execution {
-        Ok(_) => HttpResponse::Ok().json(ApiResponse {
-            // ToDo: notify REDIS channel that sessionId was updated
-            success: true,
-            message: "Event ingested".to_string()
-        }),
+        Ok(_) => {
+            // Notify REDIS channel that sessionId was created
+            if let Some(redis_pool) = data.redis_pool.as_ref() {
+                let mut connection = redis_pool.get().await.unwrap();
+
+                redis_cmd("PUBLISH")
+                    .arg(&["evt_session_update", &payload.session_id])
+                    .query_async::<()>(&mut connection)
+                    .await.unwrap();
+            }
+
+            HttpResponse::Ok().json(ApiResponse {
+                // ToDo: On SYNC_MODE, notify REDIS channel that sessionId was updated (REDIS_CLIENT, pub/sub)
+                // Otherwise wait for ingest thread to consume, which will send a pub/sub with a lot of entries
+                success: true,
+                message: "Event ingested".to_string()
+            })
+        },
 
         Err(e) => HttpResponse::InternalServerError().json(ApiResponse {
             success: false,
