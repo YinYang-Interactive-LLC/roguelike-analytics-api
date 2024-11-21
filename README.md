@@ -13,6 +13,7 @@ An HTTP server designed for ingesting and retrieving events from roguelike games
 *   **Configurable**: Configuration supported using environment variables and .env files.
 *   **IP Recording**: Logs the IP address for each session and event.
 *   **Data Privacy Compliance**: Suitable for self-hosted analytics with respect to data privacy regulations.
+*   **Redis Connection**: Notify subscribers on Redis instance if a session is created/touched for real time use cases.
 *   **Future UI Development**: Plans to develop a user interface for data examination.
 
 ## Endpoints
@@ -50,9 +51,23 @@ The server can be configured via environment variables:
 
 `MAX_JSON_PAYLOAD:` Maximum allowed JSON payload size (default `4096` [bytes])
 
-`ALLOWED_ORIGINS:` List of allowed base URLs that are allowed to request this api endpoint (default: [])
+`ALLOWED_ORIGINS:` List of allowed base URLs that are allowed to request this api endpoint (default: `[]`)
 
-`TRUST_PROXY:` extract IP from proxy headers if set to 1 (default: 0)
+`TRUST_PROXY:` extract IP from proxy headers if set to 1 (default: `0`)
+
+`REDIS_HOSTNAME:` Hostname of redis instance that is reachable from the same network (default: `None` (connection disabled))
+
+`REDIS_PORT:` The port of the listening Redis instance (default: `6379`)
+
+`REDIS_USERNAME:` Username of redis connection (default: `None`)
+
+`REDIS_PASSWORD:` Password of redis connection (default: `None`)
+
+`REDIS_PROTOCOL:` Specify either `resp2` or `resp3` (default: `resp3`)
+
+`REDIS_DATABASE:` The database instance number on the Redis client (default: `0`)
+
+`REDIS_USE_TLS:` Whether or not to use TLS over TCP (default: `false`)
 
 ## Installation
 
@@ -102,6 +117,18 @@ curl -X GET http://localhost:8080/get_events/{session_id} \
      -H "X-RLA-KEY: YOUR_SECRET_KEY"
 ```
     
+
+## Redis PUB/SUB
+
+This project can optionally connect to a Redis instance to publish significant events (using PUB) when specific data changes occur.
+
+Subscribers can subscribe to the following message types:
+
+- `evt_session_created <sessionId>`: A session was just created
+
+- `evt_session_updated <sessionId>`: A session was updated (event was posted)
+
+> Note that the Redis connection will only be enabled if a hostname is specified using `REDIS_HOSTNAME`
 
 ## Dependencies
 
