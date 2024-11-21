@@ -19,15 +19,15 @@ An HTTP server designed for ingesting and retrieving events from roguelike games
 ## Endpoints
 
 *   `POST /create_session`: Create a new session. These parameters can be specified.
-  - `user_id`: `string` (will be generated if not supplied)
-  - `device_model`: `string` (default: `null`)
-  - `operating_system`: `string` (default: `null`)
-  - `screen_width`: `u64` (default: `null`)
-  - `screen_height`: `u64` (default: `null`)
+    - `user_id`: `string` (will be generated if not supplied)
+    - `device_model`: `string` (default: `null`)
+    - `operating_system`: `string` (default: `null`)
+    - `screen_width`: `u64` (default: `null`)
+    - `screen_height`: `u64` (default: `null`)
 *   `POST /ingest_event`: Ingest a custom event into a session.
-  - `session_id`: `string` (mandatory)
-  - `event_name`: `string` (mandatory)
-  - `data`: `object` (default: `{}`)
+    - `session_id`: `string` (mandatory)
+    - `event_name`: `string` (mandatory)
+    - `data`: `object` (default: `{}`)
 *   `GET /get_sessions`: Retrieve all session IDs (requires shared secret).
 *   `GET /get_events/{session_id}`: Retrieve all events for a specific session (requires shared secret).
 
